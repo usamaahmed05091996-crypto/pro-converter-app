@@ -1,0 +1,13 @@
+.btn-primary {
+    background-color: #714B67;
+    border: none;
+    border-radius: 5px;
+}
+.btn-primary:hover { background-color: #5a3a52; }
+.card {
+    transition: transform 0.3s ease;
+}
+.card:hover {
+    transform: translateY(-10px); /* Mouse le jane par card upar uthega */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
