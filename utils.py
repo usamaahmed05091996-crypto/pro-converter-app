@@ -20,33 +20,34 @@ def convert_pdf_to_word(pdf_path: str, docx_path: str) -> None:
         raise Exception(f"PDF to Word conversion failed: {str(e)}")
 
 def convert_pdf_to_excel(pdf_path: str, excel_path: str) -> None:
-    """Converts PDF tables to Excel using pdfplumber (Robust & Java-free)."""
+    """Professional PDF to Excel conversion with table settings."""
     try:
         all_data = []
+        # Table settings taake cell structure sahi mile
+        table_settings = {
+            "vertical_strategy": "lines", 
+            "horizontal_strategy": "lines",
+            "intersection_x_tolerance": 15,
+            "intersection_y_tolerance": 15,
+        }
+        
         with pdfplumber.open(pdf_path) as pdf:
             for page in pdf.pages:
-                tables = page.extract_tables()
+                tables = page.extract_tables(table_settings=table_settings)
                 for table in tables:
-                    if table and len(table) > 1:
-                        # Convert to DataFrame
-                        df = pd.DataFrame(table[1:], columns=table[0])
-                        
-                        # Data Cleaning: Duplicate columns aur empty rows hatao
-                        df = df.loc[:, ~df.columns.duplicated()]
-                        df = df.dropna(how='all')
-                        
-                        # Index reset taake reindexing error na aaye
-                        df = df.reset_index(drop=True)
+                    if table:
+                        # Clean data: Empty strings aur None ko handle karein
+                        cleaned_table = [[(cell if cell else "") for cell in row] for row in table]
+                        df = pd.DataFrame(cleaned_table[1:], columns=cleaned_table[0])
                         all_data.append(df)
         
         if not all_data:
-            raise Exception("No tabular data found in this PDF.")
+            raise Exception("No structured table found in PDF.")
             
-        # Combine all tables
         final_df = pd.concat(all_data, ignore_index=True)
-        final_df = final_df.loc[:, ~final_df.columns.duplicated()]
+        # Drop completely empty rows/cols
+        final_df = final_df.dropna(how='all').dropna(how='all', axis=1)
         
-        # Save to Excel
         final_df.to_excel(excel_path, index=False)
     except Exception as e:
         raise Exception(f"PDF to Excel conversion failed: {str(e)}")
