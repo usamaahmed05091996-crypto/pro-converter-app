@@ -1,6 +1,6 @@
 import os
 import pikepdf
-import tabula
+import pdfplumber
 import pandas as pd
 from PIL import Image
 from pdf2docx import Converter
@@ -19,22 +19,26 @@ def convert_pdf_to_word(pdf_path: str, docx_path: str) -> None:
     except Exception as e:
         raise Exception(f"PDF to Word conversion failed: {str(e)}")
 
-import pdfplumber
-import pandas as pd
-import re
-
-def convert_pdf_to_excel(pdf_path, excel_path):
-    csv_path = excel_path.replace(".xlsx", ".csv")
-    tabula.convert_into(pdf_path, csv_path, output_format="csv", pages='all', stream=True)
+def convert_pdf_to_excel(pdf_path: str, excel_path: str) -> None:
+    """Converts PDF tables to Excel using pdfplumber (Java-free)."""
     try:
-        df = pd.read_csv(csv_path, on_bad_lines='skip', engine='python')
+        all_data = []
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                for table in tables:
+                    if table:
+                        # Pehli row ko headers banate hain
+                        df = pd.DataFrame(table[1:], columns=table[0])
+                        all_data.append(df)
+        
+        if not all_data:
+            raise Exception("No tabular data found in PDF.")
+            
+        final_df = pd.concat(all_data, ignore_index=True)
+        final_df.to_excel(excel_path, index=False)
     except Exception as e:
-        df = pd.read_csv(csv_path, sep=None, engine='python', on_bad_lines='skip')
-    df = df.dropna(how='all', axis=0).dropna(how='all', axis=1)
-    df.to_excel(excel_path, index=False)
-    
-    if os.path.exists(csv_path):
-        os.remove(csv_path)
+        raise Exception(f"PDF to Excel conversion failed: {str(e)}")
 
 def merge_pdfs(pdf_list: List[str], output_path: str) -> None:
     """Merges multiple PDF files into one."""
@@ -75,9 +79,9 @@ def convert_video_to_audio(video_path: str, audio_path: str) -> None:
         clip = VideoFileClip(video_path)
         if clip.audio is None:
             raise ValueError("The provided video file does not contain an audio track.")
-        clip.audio.write_audiofile(audio_path, logger=None) # logger=None cleans up console output
+        clip.audio.write_audiofile(audio_path, logger=None)
     except Exception as e:
         raise Exception(f"Video to Audio extraction failed: {str(e)}")
     finally:
         if clip:
-            clip.close() # Ensure resources are released
+            clip.close()
