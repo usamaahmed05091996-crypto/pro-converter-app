@@ -10,15 +10,27 @@ from typing import List
 
 # --- CONVERSION FUNCTIONS ---
 
+from docx import Document
+import pdfplumber
+
 def convert_pdf_to_word(pdf_path: str, docx_path: str) -> None:
-    """Memory-safe PDF to Word conversion using cpu_count=1."""
-    try:
-        cv = Converter(pdf_path)
-        # cpu_count=1 zaroori hai taake server ki RAM limit cross na ho
-        cv.convert(docx_path, start=0, end=None, cpu_count=1)
-        cv.close()
-    except Exception as e:
-        raise Exception(f"PDF to Word conversion failed: {str(e)}")
+    """RAM-friendly conversion: PDF to Word."""
+    doc = Document()
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if text:
+                doc.add_paragraph(text)
+            
+            # Agar table hai toh table extract karo
+            table = page.extract_table()
+            if table:
+                t = doc.add_table(rows=len(table), cols=len(table[0]))
+                for i, row in enumerate(table):
+                    for j, cell in enumerate(row):
+                        t.cell(i, j).text = str(cell) if cell else ""
+            doc.add_page_break()
+    doc.save(docx_path)
 
 def convert_pdf_to_excel(pdf_path: str, excel_path: str) -> None:
     """Memory-efficient Excel extraction using page-by-page processing."""

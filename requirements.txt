@@ -18,3 +18,4 @@ pillow
 opencv-python-headless
 PyMuPDF
 camelot-py[base]
+python-docx
