@@ -11,11 +11,12 @@ from utils import (convert_pdf_to_excel, convert_pdf_to_word, merge_pdfs,
 app = Flask(__name__)
 
 # --- Configurations ---
+basedir = os.path.abspath(os.path.dirname(__file__))
 app.secret_key = os.environ.get('SECRET_KEY', 'pro_converter_secret_2026')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'users.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join('temp', 'uploads')
-app.config['OUTPUT_FOLDER'] = os.path.join('temp', 'outputs')
+app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'temp', 'uploads')
+app.config['OUTPUT_FOLDER'] = os.path.join(basedir, 'temp', 'outputs')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 
 app.config.update(SESSION_COOKIE_HTTPONLY=True, PERMANENT_SESSION_LIFETIME=timedelta(days=7))
 
@@ -23,19 +24,25 @@ db.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User, int(user_id))
+# Ensure database tables exist immediately when app starts
+with app.app_context():
+    db.create_all()
+    print("Database tables initialized successfully.")
 
 # Create folders
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
 
 # --- UTILS ---
 def cleanup_temp_files():
     folders = [app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER']]
     cutoff = datetime.utcnow() - timedelta(hours=1)
     for folder in folders:
+        if not os.path.exists(folder): continue
         for filename in os.listdir(folder):
             path = os.path.join(folder, filename)
             try:
@@ -172,7 +179,4 @@ def submit_feedback():
     return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all() # Yeh line ensure karti hai ke tables ban jayein
     app.run()
-    
