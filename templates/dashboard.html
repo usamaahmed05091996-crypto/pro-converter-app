@@ -3,100 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Converter | Dashboard</title>
+    <title>PDF Pro | Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
-        body { background-color: #f8f9fa; }
-        .navbar { background-color: #7b4c65; }
-        .card { border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: 0.3s; }
-        .card:hover { transform: translateY(-5px); }
-        #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; text-align: center; padding-top: 20%; }
+        body { background-color: #f8fafc; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background-color: #4a148c; border-bottom: 3px solid #310c66; }
+        .card { background: #fff; border: none; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: 0.3s; height: 100%; }
+        #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; text-align: center; padding-top: 20%; }
+        .stars { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 5px; }
+        .stars input { display: none; }
+        .stars label { color: #ccc; cursor: pointer; font-size: 28px; }
+        .stars input:checked ~ label, .stars label:hover, .stars label:hover ~ label { color: #ffc107; }
     </style>
 </head>
 <body>
 
-<div id="loader"><div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div><h4 class="mt-3">Processing...</h4></div>
+<div id="loader">
+    <div class="spinner-border text-primary" role="status"></div>
+    <h5 class="mt-3">Processing...</h5>
+</div>
 
-<nav class="navbar navbar-dark px-4 py-3 mb-5 shadow">
-    <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="#"><i class="bi bi-file-earmark-pdf-fill"></i> PDF Pro Converter</a>
-        <div class="d-flex">
-            <span class="text-light me-3 mt-1"><i class="bi bi-person-circle"></i> {{ current_user.username }}</span>
-            <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+<div class="container mt-3">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show auto-dismiss">{{ message }}</div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+</div>
+
+<nav class="navbar navbar-dark mb-4 shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#"><i class="bi bi-file-earmark-pdf-fill"></i> PDF Pro</a>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-light small"><i class="bi bi-person-circle"></i> {{ current_user.username }}</span>
+            <a href="/logout" class="btn btn-outline-light btn-sm rounded-pill px-3">Logout</a>
         </div>
     </div>
 </nav>
 
-<div class="container">
-    <h3 class="mb-4 text-secondary">File Conversion Tools</h3>
-    <div class="row row-cols-1 row-cols-md-4 g-4 mb-5">
-        <div class="col"><div class="card p-4"><h6 class="text-primary"><i class="bi bi-music-note"></i> Video to Audio</h6><form action="/video-to-audio" method="POST" enctype="multipart/form-data" onsubmit="showLoader()"><input type="file" name="file" class="form-control mb-2" required><button class="btn btn-primary w-100">Convert</button></form></div></div>
-        <div class="col"><div class="card p-4"><h6 class="text-info"><i class="bi bi-image"></i> Image to PDF</h6><form action="/image-to-pdf" method="POST" enctype="multipart/form-data" onsubmit="showLoader()"><input type="file" name="file" class="form-control mb-2" required><button class="btn btn-info w-100 text-white">Convert</button></form></div></div>
-        <div class="col"><div class="card p-4"><h6 class="text-success"><i class="bi bi-file-word"></i> PDF to Word</h6><form action="/convert-pdf-to-word" method="POST" enctype="multipart/form-data" onsubmit="showLoader()"><input type="file" name="file" class="form-control mb-2" required><button class="btn btn-success w-100">Convert</button></form></div></div>
-        <div class="col"><div class="card p-4"><h6 class="text-warning"><i class="bi bi-file-excel"></i> PDF to Excel</h6><form action="/convert-pdf-to-excel" method="POST" enctype="multipart/form-data" onsubmit="showLoader()"><input type="file" name="file" class="form-control mb-2" required><button class="btn btn-warning w-100 text-white">Convert</button></form></div></div>
+<div class="container pb-5">
+    <h5 class="mb-3 fw-bold text-dark">Quick Conversion</h5>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 mb-4">
+        {% set tools = [('v_a', 'Video to Audio', 'bi-music-note', 'btn-primary', '/video-to-audio'), ('i_p', 'Image to PDF', 'bi-image', 'btn-info', '/image-to-pdf'), ('p_w', 'PDF to Word', 'bi-file-word', 'btn-success', '/convert-pdf-to-word'), ('p_e', 'PDF to Excel', 'bi-file-excel', 'btn-warning', '/convert-pdf-to-excel')] %}
+        {% for id, name, icon, btn, action in tools %}
+        <div class="col"><div class="card p-3">
+            <h6 class="text-secondary small fw-bold mb-3"><i class="bi {{ icon }}"></i> {{ name }}</h6>
+            <form id="{{ id }}" action="{{ action }}" method="POST" enctype="multipart/form-data" onsubmit="showLoader('{{ id }}')">
+                <input type="file" name="file" class="form-control form-control-sm mb-2" required>
+                <button class="btn {{ btn }} btn-sm w-100 fw-bold text-white">Convert</button>
+            </form>
+        </div></div>
+        {% endfor %}
     </div>
 
-    <h4 class="mb-3">Advanced Tools</h4>
-    <div class="row mb-5">
-        <div class="col-md-6"><div class="card p-4"><h6><i class="bi bi-layers"></i> Merge PDFs</h6><form action="/merge-pdfs" method="POST" enctype="multipart/form-data" onsubmit="showLoader()"><input type="file" name="files" class="form-control mb-2" multiple required><button class="btn btn-secondary w-100">Merge Files</button></form></div></div>
-        <div class="col-md-6"><div class="card p-4"><h6><i class="bi bi-shield-lock"></i> Protect PDF</h6><form action="/protect-pdf" method="POST" enctype="multipart/form-data" onsubmit="showLoader()"><input type="file" name="file" class="form-control mb-2" required><input type="password" name="password" class="form-control mb-2" placeholder="Password" required><button class="btn btn-danger w-100">Encrypt</button></form></div></div>
+    <h5 class="mb-3 fw-bold text-dark">Advanced Tools</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-6"><div class="card p-4">
+            <h6 class="fw-bold"><i class="bi bi-layers"></i> Merge PDFs</h6>
+            <form id="mergeForm" action="/merge-pdfs" method="POST" enctype="multipart/form-data" onsubmit="showLoader('mergeForm')">
+                <input type="file" name="files" class="form-control mb-2" multiple required>
+                <button class="btn btn-secondary w-100">Merge Files</button>
+            </form>
+        </div></div>
+        <div class="col-md-6"><div class="card p-4">
+            <h6 class="fw-bold"><i class="bi bi-shield-lock"></i> Protect PDF</h6>
+            <form id="protForm" action="/protect-pdf" method="POST" enctype="multipart/form-data" onsubmit="showLoader('protForm')">
+                <input type="file" name="file" class="form-control mb-2" required>
+                <input type="password" name="password" class="form-control mb-2" placeholder="Password" required>
+                <button class="btn btn-danger w-100">Encrypt PDF</button>
+            </form>
+        </div></div>
     </div>
 
-    <div class="card p-4 mb-5">
-        <h4><i class="bi bi-clock-history"></i> Conversion History</h4>
-        <table class="table table-hover mt-3">
-            <thead class="table-light"><tr><th>File Name</th><th>Type</th><th>Timestamp</th></tr></thead>
-            <tbody>
-                {% for file in current_user.files | sort(attribute='timestamp', reverse=True) %}
-                <tr><td>{{ file.file_name }}</td><td><span class="badge bg-secondary">{{ file.operation_type }}</span></td><td>{{ file.timestamp.strftime('%Y-%m-%d %H:%M') }}</td></tr>
-                {% else %}
-                <tr><td colspan="3" class="text-center">No conversion records found.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-clock-history"></i> Recent Activity</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <tbody>{% for file in history %}
+                            <tr><td>{{ file.file_name }}</td><td><span class="badge bg-light text-dark">{{ file.operation_type }}</span></td></tr>
+                        {% endfor %}</tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-chat-heart"></i> Give Feedback</h5>
+                <form action="/submit-feedback" method="POST">
+                    <div class="stars mb-2">
+                        <input type="radio" name="rating" value="5" id="s5"><label for="s5">★</label>
+                        <input type="radio" name="rating" value="4" id="s4"><label for="s4">★</label>
+                        <input type="radio" name="rating" value="3" id="s3"><label for="s3">★</label>
+                        <input type="radio" name="rating" value="2" id="s2"><label for="s2">★</label>
+                        <input type="radio" name="rating" value="1" id="s1"><label for="s1">★</label>
+                    </div>
+                    <textarea name="comment" class="form-control form-control-sm mb-2" rows="2" placeholder="Your Feedback..." required></textarea>
+                    <button class="btn btn-primary btn-sm w-100">Submit Rating</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="card p-4 mt-5 mb-5 shadow-sm">
-    <div class="d-flex justify-content-between align-items-center">
-        <h4><i class="bi bi-clock-history"></i> Recent Conversion History</h4>
-        <span class="badge bg-warning text-dark">History clears automatically after 1 hour</span>
-    </div>
-    
-    <table class="table table-hover mt-3">
-        <thead class="table-light">
-            <tr>
-                <th>File Name</th>
-                <th>Operation</th>
-                <th>Time (UTC)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for file in history %}
-            <tr>
-                <td>{{ file.file_name }}</td>
-                <td><span class="badge bg-primary">{{ file.operation_type }}</span></td>
-                <td>{{ file.timestamp.strftime('%H:%M:%S') }}</td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="3" class="text-center text-muted">No recent activity in the last hour.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function showLoader() { 
-        document.getElementById('loader').style.display = 'block'; 
-        
-        // Agar file download mein time lag raha hai, 
-        // toh 5 seconds baad loader ko auto-hide kar dein
-        setTimeout(function() {
-            document.getElementById('loader').style.display = 'none';
-        }, 5000);
+    setTimeout(() => { document.querySelectorAll('.auto-dismiss').forEach(el => el.remove()); }, 2000);
+    function showLoader(id) { 
+        document.getElementById('loader').style.display = 'block';
+        setTimeout(() => { document.getElementById(id).reset(); document.getElementById('loader').style.display = 'none'; }, 3000);
     }
 </script>
 </body>

@@ -1,79 +1,185 @@
 {% extends 'base.html' %}
+
 {% block content %}
+
 <div class="container mt-5">
+
     <h2 class="mb-4 text-center">File Conversion Dashboard</h2>
 
-    <div class="row g-4 mb-5">
-        <div class="col-md-3">
-            <div class="card p-3 text-center h-100">
-                <i class="fas fa-video fa-2x mb-2" style="color: #714B67;"></i>
-                <h6>Video to Audio</h6>
-                <form action="/convert" method="POST" enctype="multipart/form-data">
+
+
+    <div class="row g-3 mb-5">
+
+        {% for title, icon, action, color in [('Video to Audio', 'bi-camera-video', '/video-to-audio', '#714B67'), 
+
+                                              ('Image to PDF', 'bi-file-earmark-image', '/image-to-pdf', '#2c3e50'), 
+
+                                              ('PDF to Word', 'bi-file-earmark-word', '/convert-pdf-to-word', '#2b5797'), 
+
+                                              ('PDF to Excel', 'bi-file-earmark-excel', '/convert-pdf-to-excel', '#217346')] %}
+
+        <div class="col-6 col-md-3">
+
+            <div class="card p-3 text-center h-100 d-flex flex-column">
+
+                <i class="bi {{ icon }} mb-2" style="color: {{ color }}; font-size: 2rem;"></i>
+
+                <h6 class="mb-3">{{ title }}</h6>
+
+                <form action="{{ action }}" method="POST" enctype="multipart/form-data" class="mt-auto">
+
                     <input type="file" name="file" class="form-control form-control-sm mb-2" required>
+
                     <button type="submit" class="btn btn-primary btn-sm w-100">Convert</button>
+
                 </form>
+
             </div>
+
         </div>
-        <div class="col-md-3">
-            <div class="card p-3 text-center h-100">
-                <i class="fas fa-file-image fa-2x mb-2" style="color: #2c3e50;"></i>
-                <h6>Image to PDF</h6>
-                <form action="/convert-img-to-pdf" method="POST" enctype="multipart/form-data">
-                    <input type="file" name="file" class="form-control form-control-sm mb-2" required>
-                    <button type="submit" class="btn btn-primary btn-sm w-100">Convert</button>
-                </form>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card p-3 text-center h-100">
-                <i class="fas fa-file-word fa-2x mb-2" style="color: #2b5797;"></i>
-                <h6>PDF to Word</h6>
-                <form action="/convert-pdf-to-word" method="POST" enctype="multipart/form-data">
-                    <input type="file" name="file" class="form-control form-control-sm mb-2" required>
-                    <button type="submit" class="btn btn-primary btn-sm w-100">Convert</button>
-                </form>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card p-3 text-center h-100">
-                <i class="fas fa-file-excel fa-2x mb-2" style="color: #217346;"></i>
-                <h6>PDF to Excel</h6>
-                <form action="/convert-pdf-to-excel" method="POST" enctype="multipart/form-data">
-                    <input type="file" name="file" class="form-control form-control-sm mb-2" required>
-                    <button type="submit" class="btn btn-primary btn-sm w-100">Convert</button>
-                </form>
-            </div>
-        </div>
+
+        {% endfor %}
+
     </div>
 
+
+
     <hr class="mb-5">
+
+    
+
     <h4 class="mb-4 text-center">Advanced PDF Tools</h4>
-    <div class="row g-4 justify-content-center">
+
+    <div class="row g-4 justify-content-center mb-5">
+
         <div class="col-md-5">
-            <div class="card p-3 h-100">
-                <div class="text-center">
-                    <i class="fas fa-object-group fa-2x mb-2" style="color: #6f42c1;"></i>
+
+            <div class="card p-4 h-100 d-flex flex-column">
+
+                <div class="text-center mb-3">
+
+                    <i class="bi bi-layers" style="color: #6f42c1; font-size: 2rem;"></i>
+
                     <h5>Merge Multiple PDFs</h5>
+
                 </div>
-                <form action="/merge-pdfs" method="POST" enctype="multipart/form-data">
+
+                <form action="/merge-pdfs" method="POST" enctype="multipart/form-data" class="mt-auto">
+
                     <input type="file" name="files" class="form-control mb-2" multiple required>
+
                     <button type="submit" class="btn btn-secondary w-100">Merge Files</button>
+
                 </form>
+
             </div>
+
         </div>
+
         <div class="col-md-5">
-            <div class="card p-3 h-100">
-                <div class="text-center">
-                    <i class="fas fa-lock fa-2x mb-2" style="color: #dc3545;"></i>
-                    <h5>Protect PDF with Password</h5>
+
+            <div class="card p-4 h-100 d-flex flex-column">
+
+                <div class="text-center mb-3">
+
+                    <i class="bi bi-lock" style="color: #dc3545; font-size: 2rem;"></i>
+
+                    <h5>Protect PDF</h5>
+
                 </div>
-                <form action="/protect-pdf" method="POST" enctype="multipart/form-data">
+
+                <form action="/protect-pdf" method="POST" enctype="multipart/form-data" class="mt-auto">
+
                     <input type="file" name="file" class="form-control mb-2" required>
+
                     <input type="password" name="password" class="form-control mb-2" placeholder="Set Password" required>
+
                     <button type="submit" class="btn btn-danger w-100">Encrypt & Protect</button>
+
                 </form>
+
             </div>
+
         </div>
+
     </div>
+
+
+
+    <div class="row g-4 mb-5">
+
+        <div class="col-md-8">
+
+            <div class="card p-4 h-100">
+
+                <h5 class="mb-3"><i class="bi bi-clock-history"></i> Recent Activity</h5>
+
+                <ul class="list-group list-group-flush">
+
+                    {% for file in history %}
+
+                    <li class="list-group-item d-flex justify-content-between">
+
+                        {{ file.file_name }} <span class="badge bg-secondary">{{ file.operation_type }}</span>
+
+                    </li>
+
+                    {% endfor %}
+
+                </ul>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4">
+
+            <div class="card p-4 h-100">
+
+                <h5 class="mb-3"><i class="bi bi-chat-heart"></i> Give Feedback</h5>
+
+                <form action="/submit-feedback" method="POST">
+
+                    <div class="rating-stars mb-2">
+
+                        <input type="radio" name="rating" value="5" id="s5" required><label for="s5">★</label>
+
+                        <input type="radio" name="rating" value="4" id="s4"><label for="s4">★</label>
+
+                        <input type="radio" name="rating" value="3" id="s3"><label for="s3">★</label>
+
+                        <input type="radio" name="rating" value="2" id="s2"><label for="s2">★</label>
+
+                        <input type="radio" name="rating" value="1" id="s1"><label for="s1">★</label>
+
+                    </div>
+
+                    <textarea name="comment" class="form-control mb-2" placeholder="Your review..." required></textarea>
+
+                    <button type="submit" class="btn btn-success w-100">Submit Rating</button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
+
+
+
+<style>
+
+    .rating-stars { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 5px; font-size: 1.5rem; }
+
+    .rating-stars input { display: none; }
+
+    .rating-stars label { color: #ccc; cursor: pointer; transition: 0.2s; }
+
+    .rating-stars input:checked ~ label, .rating-stars label:hover, .rating-stars label:hover ~ label { color: #ffc107; }
+
+</style>
+
 {% endblock %}

@@ -1,7 +1,7 @@
 import os
-import pandas as pd
-import pdfplumber
 import pikepdf
+import tabula
+import pandas as pd
 from PIL import Image
 from pdf2docx import Converter
 from pypdf import PdfWriter, PdfReader
@@ -11,67 +11,73 @@ from typing import List
 # --- CONVERSION FUNCTIONS ---
 
 def convert_pdf_to_word(pdf_path: str, docx_path: str) -> None:
+    """Converts PDF to editable Word document."""
     try:
         cv = Converter(pdf_path)
         cv.convert(docx_path, start=0, end=None)
         cv.close()
     except Exception as e:
-        raise Exception(f"PDF to Word conversion failed: {e}")
+        raise Exception(f"PDF to Word conversion failed: {str(e)}")
 
-def convert_pdf_to_excel(input_path, output_path):
-    all_data = []
-    
-    # pdfplumber se table extract karna
-    with pdfplumber.open(input_path) as pdf:
-        for page in pdf.pages:
-            # 'strategy' argument ko hata dein, default settings best kaam karti hain
-            table = page.extract_table()
-            if table:
-                all_data.extend(table)
-    
-    if not all_data:
-        raise Exception("No table found in this PDF. It might be an image or scanned document.")
-    
-    # Data ko Excel mein save karna
-    df = pd.DataFrame(all_data)
-    # Pehli row ko header banana (agar zaroorat ho)
-    df.to_excel(output_path, index=False, header=False)
+import pdfplumber
+import pandas as pd
+import re
 
-# --- ADVANCED PDF TOOLS ---
+def convert_pdf_to_excel(pdf_path, excel_path):
+    csv_path = excel_path.replace(".xlsx", ".csv")
+    tabula.convert_into(pdf_path, csv_path, output_format="csv", pages='all', stream=True)
+    try:
+        df = pd.read_csv(csv_path, on_bad_lines='skip', engine='python')
+    except Exception as e:
+        df = pd.read_csv(csv_path, sep=None, engine='python', on_bad_lines='skip')
+    df = df.dropna(how='all', axis=0).dropna(how='all', axis=1)
+    df.to_excel(excel_path, index=False)
+    
+    if os.path.exists(csv_path):
+        os.remove(csv_path)
 
 def merge_pdfs(pdf_list: List[str], output_path: str) -> None:
+    """Merges multiple PDF files into one."""
     try:
         writer = PdfWriter()
         for pdf_path in pdf_list:
             reader = PdfReader(pdf_path)
             for page in reader.pages:
                 writer.add_page(page)
+        
         with open(output_path, "wb") as f:
             writer.write(f)
     except Exception as e:
-        raise Exception(f"PDF Merge failed: {e}")
+        raise Exception(f"PDF Merge failed: {str(e)}")
 
 def protect_pdf(input_path: str, output_path: str, password: str) -> None:
+    """Encrypts a PDF with a user-provided password."""
     try:
         with pikepdf.open(input_path) as pdf:
             pdf.save(output_path, encryption=pikepdf.Encryption(owner=password, user=password, R=4))
     except Exception as e:
-        raise Exception(f"PDF Protection failed: {e}")
+        raise Exception(f"PDF Protection failed: {str(e)}")
 
 def convert_image_to_pdf(image_path: str, output_pdf_path: str) -> None:
+    """Converts image (JPG/PNG) to PDF format."""
     try:
         img = Image.open(image_path)
         if img.mode != 'RGB':
             img = img.convert('RGB')
         img.save(output_pdf_path, "PDF", resolution=100.0)
     except Exception as e:
-        raise Exception(f"Image to PDF failed: {e}")
+        raise Exception(f"Image to PDF failed: {str(e)}")
 
 def convert_video_to_audio(video_path: str, audio_path: str) -> None:
-    """Video file se sirf audio extract karne ke liye"""
+    """Extracts audio from video files (mp4, mov, etc)."""
+    clip = None
     try:
-        video = VideoFileClip(video_path)
-        video.audio.write_audiofile(audio_path)
-        video.close()
+        clip = VideoFileClip(video_path)
+        if clip.audio is None:
+            raise ValueError("The provided video file does not contain an audio track.")
+        clip.audio.write_audiofile(audio_path, logger=None) # logger=None cleans up console output
     except Exception as e:
-        raise Exception(f"Video to Audio failed: {e}")
+        raise Exception(f"Video to Audio extraction failed: {str(e)}")
+    finally:
+        if clip:
+            clip.close() # Ensure resources are released

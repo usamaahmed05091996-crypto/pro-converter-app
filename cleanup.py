@@ -1,44 +1,27 @@
 import os
 import time
-import logging
+from datetime import datetime, timedelta
 
-# Logging configure karein taake pata chale kya ho raha hai
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Folder Paths
+OUTPUT_FOLDER = os.path.join('temp', 'outputs')
 
-FOLDERS_TO_CLEAN = ['temp/uploads', 'temp/outputs']
-AGE_LIMIT_SECONDS = 3600  # 1 Ghanta
-
-def clean_temp_files():
-    """Folders se 1 ghante purani files ko remove karein."""
-    current_time = time.time()
+def cleanup_files():
+    print("Cleanup process started...")
+    # 1 ghanta purani files delete karein
+    cutoff_time = datetime.utcnow() - timedelta(hours=1)
     
-    for folder in FOLDERS_TO_CLEAN:
-        if not os.path.exists(folder):
-            logging.warning(f"Folder not found, skipping: {folder}")
-            continue
+    count = 0
+    if os.path.exists(OUTPUT_FOLDER):
+        for filename in os.listdir(OUTPUT_FOLDER):
+            file_path = os.path.join(OUTPUT_FOLDER, filename)
+            # File ka creation time check karein
+            file_mtime = datetime.utcfromtimestamp(os.path.getmtime(file_path))
             
-        logging.info(f"Scanning folder: {folder}")
-        
-        for filename in os.listdir(folder):
-            file_path = os.path.join(folder, filename)
-            
-            # .gitkeep ya hidden files ko touch na karein
-            if filename.startswith('.'): continue
-            
-            try:
-                if os.path.isfile(file_path):
-                    file_age = os.path.getmtime(file_path)
-                    
-                    if (current_time - file_age) > AGE_LIMIT_SECONDS:
-                        os.remove(file_path)
-                        logging.info(f"Successfully deleted: {filename}")
-            except Exception as e:
-                logging.error(f"Failed to delete {filename}: {str(e)}")
+            if file_mtime < cutoff_time:
+                os.remove(file_path)
+                count += 1
+    
+    print(f"Cleanup finished. {count} files removed.")
 
 if __name__ == "__main__":
-    logging.info("Starting automated cleanup process...")
-    try:
-        clean_temp_files()
-        logging.info("Cleanup process finished successfully.")
-    except Exception as e:
-        logging.critical(f"Cleanup script crashed: {str(e)}")
+    cleanup_files()

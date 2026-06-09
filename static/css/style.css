@@ -1,13 +1,70 @@
-.btn-primary {
-    background-color: #714B67;
-    border: none;
-    border-radius: 5px;
+/* Glassmorphism Dashboard - Upgraded */
+:root {
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
-.btn-primary:hover { background-color: #5a3a52; }
+
+body {
+    background: #f0f2f5;
+    background-image: radial-gradient(circle at 10% 20%, rgb(239, 246, 255) 0%, rgb(255, 255, 255) 90%);
+    min-height: 100vh;
+}
+
 .card {
-    transition: transform 0.3s ease;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px); /* Yeh asli glass effect deta hai */
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    transition: all 0.3s ease;
 }
+
 .card:hover {
-    transform: translateY(-10px); /* Mouse le jane par card upar uthega */
-    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.15);
+}
+
+.btn-primary {
+    background: var(--primary-gradient);
+    border: none;
+    padding: 10px 20px;
+    transition: 0.3s;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+}
+
+input[type="file"] {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid #dee2e6;
+    font-size: 13px;
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.btn {
+    font-size: 14px;
+    padding: 10px;
+    font-weight: 600;
+    border-radius: 10px;
+}
+
+/* Table Responsive Fix for mobile */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.table td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
