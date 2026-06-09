@@ -20,22 +20,33 @@ def convert_pdf_to_word(pdf_path: str, docx_path: str) -> None:
         raise Exception(f"PDF to Word conversion failed: {str(e)}")
 
 def convert_pdf_to_excel(pdf_path: str, excel_path: str) -> None:
-    """Converts PDF tables to Excel using pdfplumber (Java-free)."""
+    """Converts PDF tables to Excel using pdfplumber (Robust & Java-free)."""
     try:
         all_data = []
         with pdfplumber.open(pdf_path) as pdf:
             for page in pdf.pages:
                 tables = page.extract_tables()
                 for table in tables:
-                    if table:
-                        # Pehli row ko headers banate hain
+                    if table and len(table) > 1:
+                        # Convert to DataFrame
                         df = pd.DataFrame(table[1:], columns=table[0])
+                        
+                        # Data Cleaning: Duplicate columns aur empty rows hatao
+                        df = df.loc[:, ~df.columns.duplicated()]
+                        df = df.dropna(how='all')
+                        
+                        # Index reset taake reindexing error na aaye
+                        df = df.reset_index(drop=True)
                         all_data.append(df)
         
         if not all_data:
-            raise Exception("No tabular data found in PDF.")
+            raise Exception("No tabular data found in this PDF.")
             
+        # Combine all tables
         final_df = pd.concat(all_data, ignore_index=True)
+        final_df = final_df.loc[:, ~final_df.columns.duplicated()]
+        
+        # Save to Excel
         final_df.to_excel(excel_path, index=False)
     except Exception as e:
         raise Exception(f"PDF to Excel conversion failed: {str(e)}")
@@ -73,7 +84,7 @@ def convert_image_to_pdf(image_path: str, output_pdf_path: str) -> None:
         raise Exception(f"Image to PDF failed: {str(e)}")
 
 def convert_video_to_audio(video_path: str, audio_path: str) -> None:
-    """Extracts audio from video files (mp4, mov, etc)."""
+    """Extracts audio from video files."""
     clip = None
     try:
         clip = VideoFileClip(video_path)
