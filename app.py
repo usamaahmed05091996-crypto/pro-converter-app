@@ -1,12 +1,13 @@
 import os
 import uuid
+import traceback
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, send_file, flash, redirect, url_for, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from sqlalchemy import func
 from models import db, User, FileHistory, Feedback
 from utils import (convert_pdf_to_excel, convert_pdf_to_word, merge_pdfs, 
-                    convert_video_to_audio, convert_image_to_pdf, protect_pdf)
+                   convert_video_to_audio, convert_image_to_pdf, protect_pdf)
 
 app = Flask(__name__)
 
@@ -24,12 +25,9 @@ db.init_app(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# Ensure database tables exist immediately when app starts
 with app.app_context():
     db.create_all()
-    print("Database tables initialized successfully.")
 
-# Create folders
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 

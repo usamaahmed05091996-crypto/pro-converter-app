@@ -15,7 +15,6 @@ pandas
 moviepy
 imageio-ffmpeg
 pillow
-tabula-py
 opencv-python-headless
 PyMuPDF
 camelot-py[base]

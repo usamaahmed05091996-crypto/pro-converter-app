@@ -11,60 +11,40 @@ from typing import List
 # --- CONVERSION FUNCTIONS ---
 
 def convert_pdf_to_word(pdf_path: str, docx_path: str) -> None:
-    """Converts PDF to editable Word document."""
+    """Memory-safe PDF to Word conversion using cpu_count=1."""
     try:
         cv = Converter(pdf_path)
-        cv.convert(docx_path, start=0, end=None)
+        # cpu_count=1 zaroori hai taake server ki RAM limit cross na ho
+        cv.convert(docx_path, start=0, end=None, cpu_count=1)
         cv.close()
     except Exception as e:
         raise Exception(f"PDF to Word conversion failed: {str(e)}")
 
 def convert_pdf_to_excel(pdf_path: str, excel_path: str) -> None:
-    """Manual Coordinate Extraction: 100% Reliable for Bank Statements."""
+    """Memory-efficient Excel extraction using page-by-page processing."""
     try:
         all_data = []
-        
         with pdfplumber.open(pdf_path) as pdf:
             for page in pdf.pages:
-                # Page ki height aur width nikalna taake hum columns set kar sakein
-                width = page.width
-                
-                # Table settings: Hum coordinate-based extraction kar rahe hain
-                # Aap apne PDF ke mutabiq vertical_lines ke coordinates adjust kar sakte hain
-                # Agar table nahi mil rahi, toh snap_tolerance badha dein
-                table_settings = {
+                # Sirf text strategy use karein, complex lines se avoid karein
+                table = page.extract_table(table_settings={
                     "vertical_strategy": "text",
                     "horizontal_strategy": "text",
-                    "snap_tolerance": 5, 
-                    "join_tolerance": 5,
-                    "edge_min_length": 10
-                }
+                    "snap_tolerance": 3
+                })
                 
-                tables = page.extract_tables(table_settings=table_settings)
-                
-                for table in tables:
-                    if table:
-                        # Data ko filter karna: None values ko empty string banana
-                        clean_table = [[(str(cell) if cell is not None else "") for cell in row] for row in table]
-                        
-                        # Pehli row ko header banana
-                        if len(clean_table) > 0:
-                            df = pd.DataFrame(clean_table[1:], columns=clean_table[0])
-                            
-                            # Duplicate columns hatao
-                            df = df.loc[:, ~df.columns.duplicated()]
-                            all_data.append(df)
+                if table:
+                    # Header handle karein
+                    df = pd.DataFrame(table[1:], columns=table[0])
+                    # Duplicate columns aur empty rows hatayein
+                    df = df.loc[:, ~df.columns.duplicated()]
+                    df = df.dropna(how='all')
+                    all_data.append(df)
         
         if not all_data:
-            raise Exception("Table structure identify nahi ho paya. PDF ka format check karein.")
+            raise Exception("Table detect nahi ho paya, PDF ka format check karein.")
             
-        # Saari tables ko combine karna
         final_df = pd.concat(all_data, ignore_index=True)
-        
-        # Final cleanup: Khali rows/cols hatao
-        final_df = final_df.dropna(how='all').dropna(how='all', axis=1)
-        
-        # Save to Excel
         final_df.to_excel(excel_path, index=False)
         
     except Exception as e:
@@ -103,13 +83,13 @@ def convert_image_to_pdf(image_path: str, output_pdf_path: str) -> None:
         raise Exception(f"Image to PDF failed: {str(e)}")
 
 def convert_video_to_audio(video_path: str, audio_path: str) -> None:
-    """Extracts audio from video files."""
+    """Extracts audio from video files using memory-safe closing."""
     clip = None
     try:
         clip = VideoFileClip(video_path)
         if clip.audio is None:
-            raise ValueError("The provided video file does not contain an audio track.")
-        clip.audio.write_audiofile(audio_path, logger=None)
+            raise ValueError("Video mein audio track nahi hai.")
+        clip.audio.write_audiofile(audio_path, logger=None, codec='mp3')
     except Exception as e:
         raise Exception(f"Video to Audio extraction failed: {str(e)}")
     finally:
