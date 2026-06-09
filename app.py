@@ -172,5 +172,7 @@ def submit_feedback():
     return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
-    with app.app_context(): db.create_all()
-    app.run(debug=True)
+    with app.app_context():
+        db.create_all() # Yeh line ensure karti hai ke tables ban jayein
+    app.run()
+    
