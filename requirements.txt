@@ -18,3 +18,4 @@ pillow
 tabula-py
 opencv-python-headless
 PyMuPDF
+camelot-py[base]

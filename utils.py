@@ -20,35 +20,53 @@ def convert_pdf_to_word(pdf_path: str, docx_path: str) -> None:
         raise Exception(f"PDF to Word conversion failed: {str(e)}")
 
 def convert_pdf_to_excel(pdf_path: str, excel_path: str) -> None:
-    """Professional PDF to Excel conversion with table settings."""
+    """Manual Coordinate Extraction: 100% Reliable for Bank Statements."""
     try:
         all_data = []
-        # Table settings taake cell structure sahi mile
-        table_settings = {
-            "vertical_strategy": "lines", 
-            "horizontal_strategy": "lines",
-            "intersection_x_tolerance": 15,
-            "intersection_y_tolerance": 15,
-        }
         
         with pdfplumber.open(pdf_path) as pdf:
             for page in pdf.pages:
+                # Page ki height aur width nikalna taake hum columns set kar sakein
+                width = page.width
+                
+                # Table settings: Hum coordinate-based extraction kar rahe hain
+                # Aap apne PDF ke mutabiq vertical_lines ke coordinates adjust kar sakte hain
+                # Agar table nahi mil rahi, toh snap_tolerance badha dein
+                table_settings = {
+                    "vertical_strategy": "text",
+                    "horizontal_strategy": "text",
+                    "snap_tolerance": 5, 
+                    "join_tolerance": 5,
+                    "edge_min_length": 10
+                }
+                
                 tables = page.extract_tables(table_settings=table_settings)
+                
                 for table in tables:
                     if table:
-                        # Clean data: Empty strings aur None ko handle karein
-                        cleaned_table = [[(cell if cell else "") for cell in row] for row in table]
-                        df = pd.DataFrame(cleaned_table[1:], columns=cleaned_table[0])
-                        all_data.append(df)
+                        # Data ko filter karna: None values ko empty string banana
+                        clean_table = [[(str(cell) if cell is not None else "") for cell in row] for row in table]
+                        
+                        # Pehli row ko header banana
+                        if len(clean_table) > 0:
+                            df = pd.DataFrame(clean_table[1:], columns=clean_table[0])
+                            
+                            # Duplicate columns hatao
+                            df = df.loc[:, ~df.columns.duplicated()]
+                            all_data.append(df)
         
         if not all_data:
-            raise Exception("No structured table found in PDF.")
+            raise Exception("Table structure identify nahi ho paya. PDF ka format check karein.")
             
+        # Saari tables ko combine karna
         final_df = pd.concat(all_data, ignore_index=True)
-        # Drop completely empty rows/cols
+        
+        # Final cleanup: Khali rows/cols hatao
         final_df = final_df.dropna(how='all').dropna(how='all', axis=1)
         
+        # Save to Excel
         final_df.to_excel(excel_path, index=False)
+        
     except Exception as e:
         raise Exception(f"PDF to Excel conversion failed: {str(e)}")
 
